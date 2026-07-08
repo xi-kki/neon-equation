@@ -38,7 +38,8 @@ export class Game {
     this.running = true;
 
     // Set initial size
-    const parent = this.renderer['canvas'].parentElement;
+    const canvas = this.renderer['canvas'];
+    const parent = canvas.parentElement;
     if (parent) {
       this.resize(parent.clientWidth, parent.clientHeight);
     }

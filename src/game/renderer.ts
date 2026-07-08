@@ -62,7 +62,7 @@ export class Renderer {
     const ctx = this.ctx;
 
     // Dark gradient background
-    if (!this.bgGradient || true) {
+    if (!this.bgGradient) {
       this.bgGradient = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.7);
       this.bgGradient.addColorStop(0, '#0a0a1a');
       this.bgGradient.addColorStop(0.5, '#050510');

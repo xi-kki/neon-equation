@@ -137,6 +137,7 @@ export class GameEngine {
   /** Process a math result — destroy matching particles */
   processMathResult(result: number): number {
     let killed = 0;
+    // Round to handle floating point: typing (15-3)/4 gives 3, not 2.999...
     const matchVal = Math.round(result);
 
     for (const p of this.particles) {
@@ -212,7 +213,8 @@ export class GameEngine {
 
   /** Main update — called every frame */
   update(dt: number) {
-    // Cap dt to avoid physics explosion on tab switch
+    // Cap at 50ms to prevent physics explosion when tab is backgrounded
+    // (browser throttles rAF to 0-4Hz, causing dt spikes up to 250ms+)
     const cappedDt = Math.min(dt, 0.05);
     const time = performance.now();
 
