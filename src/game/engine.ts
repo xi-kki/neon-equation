@@ -115,6 +115,9 @@ export class GameEngine {
     const r = CONFIG.particleMinR + Math.random() * (CONFIG.particleMaxR - CONFIG.particleMinR);
     const neon = randomNeonColor();
 
+    // Value scales with difficulty (progressive)
+    const value = randomValue(this.score);
+
     // In targetScore mode, limit total particles
     if (this.mode === 'targetScore' && this.targetScore) {
       const alive = this.particles.filter(p => p.alive).length;
@@ -130,7 +133,7 @@ export class GameEngine {
       y: y ?? r + Math.random() * (this.height * 0.5),     // spawn in top half
       vx: (Math.random() - 0.5) * 3,
       vy: (Math.random() - 0.5) * 2,
-      value: randomValue(),
+      value: randomValue(this.score),
       radius: r,
       color: neon.main,
       glowColor: neon.glow,

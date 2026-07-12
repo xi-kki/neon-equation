@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import GameCanvas from './components/GameCanvas';
 import { Game } from './game/game';
-import { parseInput, formatResult } from './game/expression';
+import { parseInput } from './game/expression';
 import { GAME_MODES } from './types';
+import { getDifficultyPhase } from './types';
 import type { GameMode } from './game/engine';
 import { playKeypress } from './game/sound';
 
@@ -60,7 +61,9 @@ export default function App() {
   const [highScores, setHighScores] = useState<HighScores>(loadHighScores);
   const [finalScore, setFinalScore] = useState(0);
   const [isNewHighScore, setIsNewHighScore] = useState(false);
-  const [particleValueRange, setParticleValueRange] = useState('1-20');
+  const [particleValueRange, setParticleValueRange] = useState('1-5');
+  const [difficultyPhase, setDifficultyPhase] = useState(getDifficultyPhase(0));
+  const [showPhaseHint, setShowPhaseHint] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
   const gameRef = useRef<Game | null>(null);
@@ -95,6 +98,18 @@ export default function App() {
     } else {
       setParticleValueRange('none');
     }
+
+    // Difficulty phase — update whenever score crosses a threshold
+    const newPhase = getDifficultyPhase(g.score);
+    setDifficultyPhase(prev => {
+      if (prev.label !== newPhase.label) {
+        setShowPhaseHint(true);
+        // Auto-hide after 4 seconds
+        setTimeout(() => setShowPhaseHint(false), 4000);
+        return newPhase;
+      }
+      return prev;
+    });
 
     // Flash on new action
     const now = performance.now();
@@ -138,8 +153,12 @@ export default function App() {
     setShowHelp(false);
     setFinalScore(0);
     setIsNewHighScore(false);
+    setShowPhaseHint(true);
     lastActionRef.current = 0;
     lastPlayedCombo.current = 0;
+
+    // Auto-hide phase hint after 6 seconds on fresh start
+    setTimeout(() => setShowPhaseHint(false), 6000);
 
     // Start game on next tick so canvas is mounted
     setTimeout(() => {
@@ -229,7 +248,7 @@ export default function App() {
           </p>
 
           {/* Game Modes */}
-          <div className="space-y-3 mb-8">
+          <div className="space-y-3 mb-6">
             {(Object.entries(GAME_MODES) as [GameMode, { label: string; desc: string }][]).map(([mode, { label, desc }]) => {
               const hsKey = mode as keyof HighScores;
               const hs = mode !== 'sandbox' ? highScores[hsKey] : null;
@@ -265,8 +284,20 @@ export default function App() {
             </button>
           </div>
 
-          <div className="mt-6 text-xs text-gray-600">
-            <p className="font-mono">Type math expressions → destroy neon particles → BOOM 💥</p>
+          {/* Quick how-to-play guide */}
+          <div className="mt-5 glass-panel rounded-xl p-4 text-left">
+            <h3 className="text-xs font-bold text-white uppercase tracking-widest mb-2">🎮 How to Play</h3>
+            <div className="space-y-1.5 text-xs text-gray-400">
+              <p>• <span className="text-neon-teal font-semibold">Particles</span> with numbers bounce around</p>
+              <p>• <span className="text-neon-yellow font-semibold">Type any math</span> to hit the number you see</p>
+              <p>• Starts with <span className="text-neon-green">1–5</span> (just type the number!)</p>
+              <p>• Gets harder as you score → up to <span className="text-neon-red">1–50</span></p>
+              <p>• Use <code className="text-neon-yellow">gravity</code>, <code className="text-neon-yellow">speed</code>, <code className="text-neon-yellow">spawn</code> to control physics</p>
+            </div>
+          </div>
+
+          <div className="mt-4 text-xs text-gray-600">
+            <p className="font-mono">🎲 + 🧮 + 💥 = Neon Equation</p>
           </div>
         </div>
       </div>
@@ -350,7 +381,7 @@ export default function App() {
       {/* Game Canvas */}
       <GameCanvas gameRef={gameRef} onStateChange={onStateChange} />
 
-      {/* HUD Overlay */}
+          {/* HUD Overlay */}
       <div className="absolute top-0 left-0 right-0 p-3 md:p-4 flex items-start justify-between pointer-events-none">
         {/* Score Panel */}
         <div className="glass-panel rounded-lg px-3 md:px-4 py-2 md:py-3 min-w-[100px] md:min-w-[140px]">
@@ -424,6 +455,21 @@ export default function App() {
         <div className="absolute top-16 md:top-20 left-1/2 -translate-x-1/2 pointer-events-none z-10">
           <div className={`animate-fade-in-up text-sm md:text-lg font-bold ${getResultColor()} neon-text text-center`}>
             {lastResult}
+          </div>
+        </div>
+      )}
+
+      {/* Difficulty phase hint banner */}
+      {showPhaseHint && (
+        <div className="absolute top-[72px] md:top-20 left-1/2 -translate-x-1/2 pointer-events-none z-10 text-center">
+          <div className="glass-panel rounded-xl px-4 md:px-6 py-2 md:py-3 animate-fade-in-up">
+            <div className="text-xs md:text-sm font-bold text-white">{difficultyPhase.label}</div>
+            <div className="text-[10px] md:text-xs text-gray-400 mt-0.5">{difficultyPhase.description}</div>
+            <div className="flex gap-2 md:gap-3 mt-1 justify-center">
+              {difficultyPhase.examples.map((ex, i) => (
+                <code key={i} className="text-[10px] md:text-xs text-neon-yellow font-mono">{ex}</code>
+              ))}
+            </div>
           </div>
         </div>
       )}
