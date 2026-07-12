@@ -43,6 +43,28 @@ export interface MathExpr {
 
 export type ParsedInput = Command | MathExpr | null;
 
+export type Difficulty = 'easy' | 'normal' | 'hard';
+
+export interface GameModeConfig {
+  sandbox: { label: string; desc: string };
+  timeAttack: { label: string; desc: string };
+  targetScore: { label: string; desc: string };
+}
+
+export const GAME_MODES: GameModeConfig = {
+  sandbox: { label: '🎯 Sandbox', desc: 'Free play — no pressure, just math & physics' },
+  timeAttack: { label: '⏱️ Time Attack', desc: 'Destroy as many particles as you can in 60 seconds' },
+  targetScore: { label: '🏆 Target Score', desc: 'Reach 5,000 points without running out of particles' },
+};
+
+export function randomValue(): number {
+  // Weighted: mostly 1-20, occasionally higher
+  if (Math.random() < 0.8) {
+    return Math.floor(Math.random() * 20) + 1;
+  }
+  return Math.floor(Math.random() * 50) + 21;
+}
+
 export const NEON_COLORS = [
   { main: '#FF6B6B', glow: '#FF0000' },
   { main: '#4ECDC4', glow: '#00FFFF' },
@@ -60,10 +82,4 @@ export function randomNeonColor() {
   return NEON_COLORS[Math.floor(Math.random() * NEON_COLORS.length)];
 }
 
-export function randomValue(): number {
-  // Weighted: mostly 1-20, occasionally higher
-  if (Math.random() < 0.8) {
-    return Math.floor(Math.random() * 20) + 1;
-  }
-  return Math.floor(Math.random() * 50) + 21;
-}
+

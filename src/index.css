@@ -81,11 +81,49 @@
     100% { background: transparent; }
   }
 
+  @keyframes float {
+    0%, 100% { transform: translateY(0) scale(1); opacity: 0.3; }
+    50%      { transform: translateY(-20px) scale(1.2); opacity: 0.6; }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.4; }
+  }
+
   .animate-fade-in-up {
     animation: fadeInUp 0.3s ease-out;
   }
 
   .animate-flash {
     animation: screenFlash 0.3s ease-out;
+  }
+
+  .animate-float {
+    animation: float ease-in-out infinite;
+  }
+
+  .animate-pulse {
+    animation: pulse 1s ease-in-out infinite;
+  }
+
+  .text-neon-teal {
+    color: #4ECDC4;
+  }
+
+  .text-neon-yellow {
+    color: #FFEAA7;
+  }
+
+  .text-neon-red {
+    color: #FF6B6B;
+  }
+
+  .text-neon-green {
+    color: #96CEB4;
+  }
+
+  .border-neon-teal\/50 {
+    border-color: rgba(78, 205, 196, 0.5);
   }
 }

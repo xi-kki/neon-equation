@@ -7,6 +7,16 @@
 import { GameEngine, CONFIG } from './engine';
 import { Renderer } from './renderer';
 import { parseInput } from './expression';
+import {
+  playExplosion,
+  playCombo,
+  playMiss,
+  playCommand,
+  playClear,
+  playGameOver,
+  playVictory,
+  initAudio,
+} from './sound';
 
 export class Game {
   engine: GameEngine;
@@ -21,6 +31,7 @@ export class Game {
   // Callbacks
   onFpsUpdate?: (fps: number) => void;
   onStateChange?: () => void;
+  audioInitialized = false;
 
   constructor(canvas: HTMLCanvasElement) {
     this.engine = new GameEngine();
@@ -29,6 +40,15 @@ export class Game {
     // Wire up engine state changes to UI
     this.engine.onUpdate = () => {
       if (this.onStateChange) this.onStateChange();
+    };
+
+    // Game over callback for mode-based games
+    this.engine.onGameOver = () => {
+      if (this.engine.mode === 'timeAttack') {
+        playGameOver();
+      } else if (this.engine.mode === 'targetScore') {
+        playVictory();
+      }
     };
   }
 
@@ -87,9 +107,18 @@ export class Game {
     this.renderer.resize(width, height);
   }
 
-  /** Process player input */
+  /** Initialize audio on first interaction */
+  ensureAudio() {
+    if (!this.audioInitialized) {
+      initAudio();
+      this.audioInitialized = true;
+    }
+  }
+
+  /** Process player input — with sound */
   processInput(input: string) {
     if (!input.trim()) return;
+    if (this.engine.gameOver) return;
 
     const parsed = parseInput(input);
 
@@ -97,24 +126,36 @@ export class Game {
       this.engine.lastResult = `Can't parse: "${input}"`;
       this.engine.lastResultType = '';
       this.engine.lastAction = performance.now();
+      playMiss();
       return;
     }
 
     switch (parsed.type) {
-      case 'math':
-        this.engine.processMathResult(parsed.result);
+      case 'math': {
+        const killed = this.engine.processMathResult(parsed.result);
+        if (killed > 0) {
+          playExplosion(killed);
+          if (this.engine.combo > 1) playCombo(this.engine.combo);
+        } else {
+          playMiss();
+        }
         break;
+      }
       case 'gravity':
         this.engine.setGravity(parsed.value);
+        playCommand();
         break;
       case 'speed':
         this.engine.multiplySpeed(parsed.value);
+        playCommand();
         break;
       case 'spawn':
         this.engine.spawn(parsed.value);
+        playCommand();
         break;
       case 'clear':
         this.engine.clearAll();
+        playClear();
         break;
     }
   }

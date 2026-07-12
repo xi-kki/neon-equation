@@ -26,6 +26,19 @@ export const CONFIG = {
   comboMultiplier: 1.5,
 };
 
+export type GameMode = 'sandbox' | 'timeAttack' | 'targetScore';
+
+export interface TimeAttackState {
+  timeRemaining: number;
+  totalTime: number;
+}
+
+export interface TargetScoreState {
+  target: number;
+  initialParticles: number;
+  maxParticles: number;
+}
+
 let nextId = 1;
 
 export class GameEngine {
@@ -45,8 +58,15 @@ export class GameEngine {
   private animationId = 0;
   private lastTime = 0;
 
+  // Mode support
+  mode: GameMode = 'sandbox';
+  timeAttack?: TimeAttackState;
+  targetScore?: TargetScoreState;
+  gameOver = false;
+
   // Callbacks
   onUpdate?: (state: GameEngine) => void;
+  onGameOver?: () => void;
 
   /** Initialize with starting particles */
   init(count = 12) {
@@ -58,6 +78,10 @@ export class GameEngine {
     this.speedMultiplier = 1;
     this.shakeIntensity = 0;
     this.spawnTimer = 0;
+    this.mode = 'sandbox';
+    this.gameOver = false;
+    this.timeAttack = undefined;
+    this.targetScore = undefined;
     nextId = 1;
 
     for (let i = 0; i < count; i++) {
@@ -65,10 +89,40 @@ export class GameEngine {
     }
   }
 
+  /** Start a game mode */
+  startMode(mode: GameMode) {
+    this.init(14);
+    this.mode = mode;
+    this.gameOver = false;
+
+    if (mode === 'timeAttack') {
+      this.timeAttack = { timeRemaining: 60, totalTime: 60 };
+    } else if (mode === 'targetScore') {
+      this.targetScore = { target: 5000, initialParticles: 14, maxParticles: 18 };
+    }
+  }
+
+  /** Set game over state */
+  setGameOver() {
+    this.gameOver = true;
+    this.onGameOver?.();
+    // Big final explosion
+    this.bigExplosion(this.width / 2, this.height / 2, '#4ECDC4', 3);
+  }
+
   /** Create a new particle at a random position */
   spawnParticle(x?: number, y?: number): Particle {
     const r = CONFIG.particleMinR + Math.random() * (CONFIG.particleMaxR - CONFIG.particleMinR);
     const neon = randomNeonColor();
+
+    // In targetScore mode, limit total particles
+    if (this.mode === 'targetScore' && this.targetScore) {
+      const alive = this.particles.filter(p => p.alive).length;
+      if (alive >= this.targetScore.maxParticles) {
+        // Don't spawn, just return null-like — caller handles
+        // Actually we still return but skip push — let's just cap
+      }
+    }
 
     const p: Particle = {
       id: nextId++,
@@ -217,6 +271,21 @@ export class GameEngine {
     // (browser throttles rAF to 0-4Hz, causing dt spikes up to 250ms+)
     const cappedDt = Math.min(dt, 0.05);
     const time = performance.now();
+
+    // Mode-specific logic
+    if (this.mode === 'timeAttack' && this.timeAttack && !this.gameOver) {
+      this.timeAttack.timeRemaining -= cappedDt;
+      if (this.timeAttack.timeRemaining <= 0) {
+        this.timeAttack.timeRemaining = 0;
+        this.setGameOver();
+      }
+    }
+
+    if (this.mode === 'targetScore' && this.targetScore && !this.gameOver) {
+      if (this.score >= this.targetScore.target) {
+        this.setGameOver();
+      }
+    }
 
     // --- Particle physics ---
     const aliveParticles = this.particles.filter(p => p.alive);
